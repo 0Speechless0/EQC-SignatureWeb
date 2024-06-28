@@ -1,0 +1,112 @@
+﻿@page "/page/{token}/{engSeq}/{signatureRole}"
+@using Microsoft.AspNetCore.WebUtilities
+@using SignatureWeb.Shared.Models
+@using Newtonsoft.Json;
+@using Microsoft.AspNetCore.Components.Web
+
+@inject NavigationManager NavManager
+@if(isFinishUpload)
+{
+    <h3>簽名檔已經上傳，</h3>
+    <h3>感謝您的使用</h3>
+}
+else if (SignatureVal != null)
+{
+    <Drawing 
+        SignatureVal="@SignatureVal" 
+        Token="@Token"
+        SignatureRole="@SignatureRole"
+        finishUpload="finishUpload"
+    ></Drawing>
+ 
+}
+else if (SignatureValOption != null)
+{
+    <div>
+        <h3>
+            您是哪位?
+        </h3>
+        <select class="form-control" @bind="SignatureVal">
+            <option value="">請選擇---- </option>
+            @foreach (var item in SignatureValOption)
+            {
+
+                <option value="@item"> @item </option>
+            }
+        </select>
+    </div>
+}
+
+
+
+<style>
+    /* 在垂直方向上的版面樣式 */
+/*    .content {
+        height: 300px;
+        width: 80%;
+        /* 垂直版面樣式的 CSS 屬性 */
+    }
+
+    /* 在橫向方向上的版面樣式 */
+    .content-landscape {
+
+        /* 橫向版面樣式的 CSS 屬性 */
+        height :300px;
+        width: 600px;
+    }*/
+</style>
+
+@*<SurveyPrompt Title="How is Blazor working for you?" />*@
+@inject IJSRuntime JS
+@inject Services.ConstCheckSignatureService  servcie
+@inject EQC.Services.APIService auth
+@code {
+    protected override async void OnAfterRender(bool firstRender)
+    {
+        if (firstRender)
+        {
+
+            SignatureValOption = await servcie.GetSignatureValOption(Int32.Parse(EngSeq), Int32.Parse(SignatureRole));
+            StateHasChanged();
+            //    var uri = NavManager.ToAbsoluteUri(NavManager.Uri);
+            //    if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("token", out var _token))
+            //    {
+            //        Token = Convert.ToString(_token);
+            //    }
+            //    if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("engSeq", out var _engSeq))
+            //    {
+            //        EngSeq = Convert.ToInt32(_engSeq);
+            //    }
+            //    if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("constCheckSeq", out var _constCheckSeq))
+            //    {
+            //        ConstCheckSeq = Convert.ToInt32(_constCheckSeq);
+            //    }
+            //    if (QueryHelpers.ParseQuery(uri.Query).TryGetValue("signatureRole", out var _signatureRole))
+            //    {
+            //        SignatureRole = Convert.ToInt32(_signatureRole);
+            //    }
+        }
+
+    }
+
+    private string SignatureVal { get; set; }
+
+    private string[] SignatureValOption { get; set; }
+
+    [Parameter]
+    public string Token { get; set; }
+    [Parameter]
+    public string EngSeq { get; set; }
+    [Parameter]
+    public string SignatureRole { get; set; }
+
+    private bool isFinishUpload { get; set; } = false;
+    public void finishUpload()
+    {
+        isFinishUpload = true;
+        StateHasChanged();
+    }
+
+
+
+}

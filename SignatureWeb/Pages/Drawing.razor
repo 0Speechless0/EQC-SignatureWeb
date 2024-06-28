@@ -1,0 +1,135 @@
+﻿
+@using Microsoft.AspNetCore.WebUtilities
+@using SignatureWeb.Shared.Models
+@using Newtonsoft.Json;
+@using Microsoft.AspNetCore.Components.Web
+
+@inject NavigationManager NavManager
+<h5>@SignatureVal 您好! </h5>
+<h5>請寫下您的大名：</h5>
+
+<div class="row" id="signature" style="height:200px">
+    <canvas id="mycanvas" style="background: rgb(238, 238, 238) none repeat scroll 0% 0%;width:inherit; height:inherit" class="col-12"></canvas>
+</div>
+<div id="image" class="row" hidden>
+</div>
+<div class="row p-2">
+    <div class="col text-center p-2">
+        <button type="button" class="btn btn-success col-8" @onclick="upload">上傳</button>
+    </div>
+    <div class="col text-center p-2">
+        <button type="button" class="btn btn-secondary col-8" id="clear">清除</button>
+    </div>
+    @*    <button @onclick="@(async( ) => await JS.InvokeVoidAsync("onConvertToImageClick"))" id="convertToImage" class="btn btn-color11-3 btn-xs mx-1">轉圖</button>*@
+
+</div>
+
+
+
+<style>
+    /* 在垂直方向上的版面樣式 */
+    /*    .content {
+            height: 300px;
+            width: 80%;
+            /* 垂直版面樣式的 CSS 屬性 */
+    }
+
+    /* 在橫向方向上的版面樣式 */
+    .content-landscape {
+        /* 橫向版面樣式的 CSS 屬性 */
+        height: 300px;
+        width: 600px;
+    }
+
+    */
+</style>
+
+@*<SurveyPrompt Title="How is Blazor working for you?" />*@
+@inject IJSRuntime JS
+@inject Services.ConstCheckSignatureService servcie
+@inject EQC.Services.APIService auth
+@code {
+    private int page = 0;
+    protected override async void OnAfterRender(bool firstRender)
+    {
+        try{
+            if (firstRender)
+            {
+                await JS.InvokeVoidAsync("mountCanvas");
+                //await JS.InvokeVoidAsync("addOrientationChangeListener");
+            }
+        }
+        catch(Exception e)
+        {
+            JS.InvokeVoidAsync("alert", $"錯誤:{e.Message},{e.StackTrace}");
+        }
+
+
+    }
+
+    [Parameter]
+    public string SignatureVal { get; set; }
+
+    [Parameter]
+    public string Token { get; set; }
+
+    [Parameter]
+    public string EngSeq { get; set; }
+    [Parameter]
+    public string SignatureRole { get; set; }
+
+    [Parameter]
+    public Action finishUpload { get; set; }
+
+    private async Task upload()
+    {
+        //HttpClient client = new HttpClient();
+
+        try{
+            if (auth.checkTokenVaild(Token) )
+            {
+                string imgBase64 = "";
+                string imgBase64Chunck = "";
+                int i = 0;
+                do
+                {
+                    imgBase64Chunck = await JS.InvokeAsync<string>("getImageBase64", i);
+                    imgBase64 += imgBase64Chunck;
+                    i++;
+                }
+                while (imgBase64Chunck != "");
+
+  
+                await servcie.uploadImage(
+                new ConstCheckSignature
+                    {
+                        SignatureImgeBase64 = imgBase64,
+                        EngSeq = Convert.ToInt32(EngSeq),
+                        SignatureVal = SignatureVal,
+                        SignatureRole = Convert.ToInt32(SignatureRole),
+                        Token = Token
+                    }
+
+                );
+
+                await JS.InvokeVoidAsync("alert", "上傳成功");
+
+                finishUpload.Invoke();
+            }
+            else
+            {
+                JS.InvokeVoidAsync("alert", "認證失敗，請先從水利署手機APP跳轉至此頁");
+            }
+
+        }
+        catch(Exception e)
+        {
+            JS.InvokeVoidAsync("alert", "發生錯誤" + e.Message + ":" + e.InnerException.Message);
+        }
+
+
+    }
+
+
+    
+}

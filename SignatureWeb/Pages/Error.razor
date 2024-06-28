@@ -1,0 +1,19 @@
+﻿
+@page "/error/{status}"
+<h3>error : @Message </h3>
+
+@code {
+    [Parameter]
+    public int Status { get; set; }
+
+    private string Message{ 
+        get {
+            switch(Status)
+            {
+                case 0 : return "authentication failed !";
+                default : return "something error";
+            }
+        }
+
+    }
+}
