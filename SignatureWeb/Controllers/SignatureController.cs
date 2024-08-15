@@ -7,7 +7,7 @@ using SignatureWeb.Shared.Models;
 namespace SignatureWeb.Server.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api")]
     public class SignatureController : Controller
     {
         APIService apiService;
