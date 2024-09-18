@@ -56,69 +56,92 @@ namespace SignatureWeb.Services
 
             }
         }
+
+
+        // 1 : 自辦 2 :委辦
+        public async Task<byte?> GetEngSupervisorExecType(int engSeq)
+        {
+            using( var context = _db.CreateDbContext())
+            {
+               var a = context.EngMain.Find(engSeq)?.SupervisorExecType;
+                return a;
+            }
+        }
         public async Task<string[] > GetSignatureValOption(int engSeq, int Role)
         {
             using (var context = _db.CreateDbContext())
             {
-              
+
+                var eng = context.EngMain.Find(engSeq);
 
                 if(Role == 2 || Role == 3)
                 {
-                    string sql = @"
+                    if(eng.SupervisorExecType == 1)
+                    {
+                        //自辦監造主任、現場人員
+                        string sql = @"
                         SELECT 
 	                    u.DisplayName
-                    FROM EngSupervisor ee
-                      inner Join UserMain u on u.Seq =  ee.UserMainSeq
-                      where ee.EngMainSeq = @engSeq and ee.UserKind =@Role
-                    ";
+                        FROM EngSupervisor ee
+                          inner Join UserMain u on u.Seq =  ee.UserMainSeq
+                          where ee.EngMainSeq = @engSeq and ee.UserKind =@Role
+                        ";
 
-                    var cmd = mySqlConnection.GetCommand(sql);
+                        var cmd = mySqlConnection.GetCommand(sql);
 
-                    cmd.Parameters.AddWithValue("@engSeq", engSeq);
-                    int targetRole;
-                    switch(Role)
+                        cmd.Parameters.AddWithValue("@engSeq", engSeq);
+                        int targetRole;
+                        switch (Role)
+                        {
+                            case 3: targetRole = 0; break;
+                            case 2: targetRole = 1; break;
+                            default: return null;
+                        }
+
+                        cmd.Parameters.AddWithValue("@Role", targetRole);
+
+                        return mySqlConnection.GetDataTable(cmd)
+                         .Rows.Cast<DataRow>()
+                         .Select(row => row.Field<string>("DisplayName"))
+                         .Distinct()
+                         .ToArray();
+                    }
+                    else
                     {
-                        case 3: targetRole = 0;break;
-                        case 2: targetRole = 1;break;
-                        default: return null;
+                        //委辦監造主任、現場人員
+                        string sql = $@"
+                        SELECT 
+	                    u.DisplayName
+                      FROM UserMain u
+                      " + (Role == 3 ? $@" where u.UserNo = 'S{eng.EngNo}' " :
+                                           $@" where u.UserNo Like 'S{eng.EngNo}%' and  u.UserNo != 'S{eng.EngNo}'");
+
+                        var cmd = mySqlConnection.GetCommand(sql);
+                        cmd.Parameters.AddWithValue("@engSeq", engSeq);
+                        return  mySqlConnection.GetDataTable(cmd)
+                        .Rows.Cast<DataRow>()
+                        .Select(row => row.Field<string>("DisplayName"))
+                        .Distinct()
+                        .ToArray();
+
                     }
 
-                    cmd.Parameters.AddWithValue("@Role", targetRole);
-
-                    var arr = mySqlConnection.GetDataTable(cmd)
-                    .Rows.Cast<DataRow>()
-                    .Select(row => row.Field<string>("DisplayName"))
-                    .ToArray();
-
-                    sql = @"
-                        SELECT 
-	                    u.SupervisorDirector
-                      FROM EngMain u
-                      where u.Seq = @engSeq and u.SupervisorDirector is not null
-                    ";
-                    cmd = mySqlConnection.GetCommand(sql);
-                    cmd.Parameters.AddWithValue("@engSeq", engSeq);
-                    var arr2 = mySqlConnection.GetDataTable(cmd)
-                    .Rows.Cast<DataRow>()
-                    .Select(row => row.Field<string>("SupervisorDirector"))
-                    .ToArray();
-
-                    return arr.Concat(arr2).ToArray();
                 }
                 //施工廠商
                 if(Role == 4)
                 {
-                    string sql2 = @"
+                    string sql2 = $@"
                         SELECT 
-	                    u.BuildContractorContact
-                      FROM EngMain u
-                      where u.Seq = @engSeq and u.BuildContractorContact is not null
+	                    u.DisplayName
+                      FROM UserMain u
+                    where u.UserNo = 'C{eng.EngNo}'
                     ";
                     var cmd2 = mySqlConnection.GetCommand(sql2);
                     cmd2.Parameters.AddWithValue("@engSeq", engSeq);
                     return mySqlConnection.GetDataTable(cmd2)
                         .Rows.Cast<DataRow>()
-                        .Select(row => row.Field<string>("BuildContractorContact"))
+                        .Select(row => row.Field<string>("DisplayName"))
+                        .Distinct()
                         .ToArray();
                 }
                 //抽查者
@@ -138,6 +161,7 @@ namespace SignatureWeb.Services
                     return mySqlConnection.GetDataTable(cmd2)
                         .Rows.Cast<DataRow>()
                         .Select(row => row.Field<string>("DisplayName"))
+                        .Distinct()
                         .ToArray();
                 }
                 return new string[0];

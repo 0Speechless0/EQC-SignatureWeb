@@ -21,6 +21,6 @@ namespace SignatureWeb.Shared.Models
         }
         public DbSet<ConstCheckSignature> constCheckSignatures { get; set; }
 
-
+        public DbSet<EngMain> EngMain { get; set; }
     }
 }

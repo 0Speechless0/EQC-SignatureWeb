@@ -55,7 +55,26 @@
         try{
             if (firstRender)
             {
-                await JS.InvokeVoidAsync("mountCanvas");
+                if (( await servcie.GetEngSupervisorExecType(Int32.Parse(EngSeq) ) ) == 1  
+                    && (SignatureRole == "2" || SignatureRole == "3"))
+                {
+                    await servcie.uploadImage(
+                        new ConstCheckSignature
+                        {
+                            SignatureImgeBase64 = "",
+                            EngSeq = Convert.ToInt32(EngSeq),
+                            SignatureVal = SignatureVal,
+                            SignatureRole = Convert.ToInt32(SignatureRole),
+                            Token = Token
+                        }
+
+                    );
+                    finishUpload.Invoke();
+                }
+
+                else
+                    await JS.InvokeVoidAsync("mountCanvas");
+  
                 //await JS.InvokeVoidAsync("addOrientationChangeListener");
             }
         }
